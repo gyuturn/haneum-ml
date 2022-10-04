@@ -23,47 +23,35 @@ app = Flask(__name__)
 # predict 페이지에서는 POST라는 method가 사용될 것이다.
 @app.route('/regression', methods=['POST'])
 def home():
-jsonData = request.json
+    jsonData = request.json
 
-temporal_data={'kda': jsonData['kda'], 'cs_per_minute':jsonData['cs_per_minute'], 'play_time': jsonData['play_time'], 'hit_damage': jsonData['hit_damage']}
-UNKNOWN_USER = np.array([temporal_data['kda'], temporal_data['cs_per_minute'], temporal_data['play_time'], temporal_data['hit_damage']])
-UNKNOWN_USER = np.array([UNKNOWN_USER])
-UNKNOWN_USER = scaler.transform(UNKNOWN_USER)
-is_troll = model.predict(UNKNOWN_USER)
-troll_possibility = model.predict_proba(UNKNOWN_USER)
+    temporal_data={'kda': jsonData['kda'], 'cs_per_minute':jsonData['cs_per_minute'], 'play_time': jsonData['play_time'], 'hit_damage': jsonData['hit_damage']}
+    UNKNOWN_USER = np.array([temporal_data['kda'], temporal_data['cs_per_minute'], temporal_data['play_time'], temporal_data['hit_damage']])
+    UNKNOWN_USER = np.array([UNKNOWN_USER])
+    UNKNOWN_USER = scaler.transform(UNKNOWN_USER)
+    is_troll = model.predict(UNKNOWN_USER)
+    troll_possibility = model.predict_proba(UNKNOWN_USER)
 
+    print(f'트롤확률: {troll_possibility[0][0]*100}%')
 
-
-# arr = np.array([[data1, data2, data3, data4]])
-# is_troll = model.predict(arr)
-# troll_possibility = model.predict_proba(arr)
-print(f'트롤확률: {troll_possibility[0][0]*100}%')
-# 보여줄 페이지 그리고 어떤 데이터를 넘길지에 대해서 확인한다....
-# 모델이 예측한 결과를 넘겨서 그 값에 따라 if문을 작성하게 한다.
-return jsonify({"troll_possibility":troll_possibility[0][0]*100})
+    return jsonify({"troll_possibility":troll_possibility[0][0]*100})
 
 
 # predict 페이지에서는 POST라는 method가 사용될 것이다.
 @app.route('/kmeans', methods=['POST'])
 def km():
-jsonData = request.json
-js={ 'tier':jsonData['tier'], 'troll_possibility': jsonData['troll_possibility']}
+     = request.json
+    js={ 'tier':jsonData['tier'], 'troll_possibility': jsonData['troll_possibility']}
 
+    df = pd.DataFrame(js, index=[0])
 
-df = pd.DataFrame(js, index=[0])
+    df[['tier', 'troll_possibility']] = scalerkmeans.transform(df[['tier', 'troll_possibility']].head(1))
 
+    cluster = modelkmeans.predict(df[['tier', 'troll_possibility']].head(1))
 
-
-# df[['tier', 'troll_possibility']] = scaler.fit_transform(df[['tier', 'troll_possibility']])
-
-df[['tier', 'troll_possibility']] = scalerkmeans.transform(df[['tier', 'troll_possibility']].head(1))
-
-cluster = modelkmeans.predict(df[['tier', 'troll_possibility']].head(1))
-
-print(cluster)
-response=cluster[0]
-return jsonify({"cluster":int(response)})
+    response=cluster[0]
+    return jsonify({"cluster":int(response)})
 
 
 if __name__ == "__main__":
-app.run(debug=True, host='0.0.0.0', port='8080')
+app.run(debug=True, host='0.0.0.0', port='5000')
